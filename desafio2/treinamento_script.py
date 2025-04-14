@@ -1,20 +1,34 @@
 # %%
+import re
+
 import pandas as pd
+from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 
+
 # %%
+# Function to remove HTML tags from text using BeautifulSoup
+def remove_html(text):
+    return BeautifulSoup(text, "html.parser").get_text()
+
+
+# %%
+# Load the data
 train_df = pd.read_csv("data/train.csv", index_col="id")
 test_df = pd.read_csv("data/test.csv", index_col="id")
 
 # %%
+# Remove HTML tags from the review text in both train and test datasets
+train_df["clean_review"] = train_df["review"].apply(remove_html)
+test_df["clean_review"] = test_df["review"].apply(remove_html)
 
-train_df
 # %%
+# Split the training data (using the cleaned reviews)
 X_train, X_test, y_train, y_test = train_test_split(
-    train_df["review"], train_df["label"], test_size=0.2, random_state=42
+    train_df["clean_review"], train_df["label"], test_size=0.2, random_state=42
 )
 # %%
 cv = CountVectorizer()
