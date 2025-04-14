@@ -1,10 +1,9 @@
 # %%
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
 
 SEED = 42
 
@@ -63,12 +62,12 @@ final_predictions = knn_grid.predict(test_df_pca)
 
 
 # %%
-def create_submission_file(
-    predictions, test_df, submission_file_name="submission_heloysa_marina.csv"
-):
+def create_submission_file(predictions, test_df, submission_file_name="submission.csv"):
     submission_df = pd.DataFrame({"id": test_df.index, "Target": predictions})
     submission_df.to_csv(submission_file_name, index=False)
     print(f"Submission file '{submission_file_name}' created successfully.")
 
 
 create_submission_file(final_predictions, test_df)
+
+# %%
