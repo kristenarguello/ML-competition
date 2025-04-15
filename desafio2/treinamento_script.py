@@ -1,72 +1,66 @@
 # %%
-import re
-
 import pandas as pd
 from bs4 import BeautifulSoup
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer  # , TfidfTransformer
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier
 
 
 # %%
-# Function to remove HTML tags from text using BeautifulSoup
 def remove_html(text):
     return BeautifulSoup(text, "html.parser").get_text()
 
 
 # %%
-# Load the data
+
 train_df = pd.read_csv("data/train.csv", index_col="id")
 test_df = pd.read_csv("data/test.csv", index_col="id")
 
 # %%
-# Remove HTML tags from the review text in both train and test datasets
-train_df["clean_review"] = train_df["review"].apply(remove_html)
-test_df["clean_review"] = test_df["review"].apply(remove_html)
+train_df["clean_review"] = train_df["review"]  # .apply(remove_html)
+test_df["clean_review"] = test_df["review"]  # .apply(remove_html)
 
 # %%
-# Split the training data (using the cleaned reviews)
-X_train, X_test, y_train, y_test = train_test_split(
+X_train, X_val, y_train, y_val = train_test_split(
     train_df["clean_review"], train_df["label"], test_size=0.2, random_state=42
 )
 # %%
-cv = CountVectorizer()
-cv.fit(X_train)
-
-# %%
-X_train_cv = cv.transform(X_train)
-
-# %%
-X_train_cv
-# %%
-X_train_cv_df = pd.DataFrame(X_train_cv.toarray(), columns=cv.get_feature_names_out())
-X_train_cv_df
-
-# %%
-model = MultinomialNB()
-
-# %%
-model.fit(X_train_cv, y_train)
-
-# %%
-X_test_cv = cv.transform(X_test)
-# %%
-y_pred = model.predict(X_test_cv)
-# %%
-print(f"Accuracy: {accuracy_score(y_test, y_pred)}")
 
 
-# %%
-def create_submission_file(predictions, test_df, submission_file_name="submission.csv"):
-    submission_df = pd.DataFrame({"id": test_df.index, "Target": predictions})
-    submission_df.to_csv(submission_file_name, index=False)
-    print(f"Submission file '{submission_file_name}' created successfully.")
-
-
-# %%
-create_submission_file(
-    model.predict(cv.transform(test_df["review"])), test_df, "submission.csv"
+pipeline = Pipeline(
+    [
+        ("vect", CountVectorizer()),
+        # ("tfidf", TfidfTransformer()),
+        ("clf", DecisionTreeClassifier(random_state=42)),
+    ]
 )
 
+# %%
+param_grid = {
+    "clf__criterion": ["log_loss"],
+    "clf__ccp_alpha": [0.001],
+    "clf__max_depth": [None],
+}
+
+
+grid_search = GridSearchCV(pipeline, param_grid, cv=5, scoring="accuracy", n_jobs=-1)
+grid_search.fit(X_train, y_train)
+# %%
+
+print("Melhores parâmetros encontrados:", grid_search.best_params_)
+print("Melhor acurácia na validação cruzada:", grid_search.best_score_)
+# %%
+
+
+y_pred_val = grid_search.predict(X_val)
+print("Acurácia no conjunto de validação:", accuracy_score(y_val, y_pred_val))
+# %%
+
+
+y_pred_test = grid_search.predict(test_df["clean_review"])
+submission_df = pd.DataFrame({"id": test_df.index, "Target": y_pred_test})
+submission_df.to_csv("submission.csv", index=False)
+print("Arquivo 'submission.csv' criado com sucesso!")
 # %%
