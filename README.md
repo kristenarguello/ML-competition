@@ -1,2 +1,2 @@
 # ML-competition
-The competition of the competition of of the competition of of the competition of of the competition of of the competition of of the competition of of the competition of of the competition of of the competition of of the competition of of the competition of  MACHILE DISlearninih
+This is the code for a challenge on Kaggle, proposed on our Machine Learning class.
